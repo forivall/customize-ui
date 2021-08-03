@@ -123,6 +123,13 @@ define([
                 };
             }, function(error) {});
 
+            // find all references peek result
+            require(["vs/editor/contrib/gotoSymbol/peek/referencesTree"], function(referencesTree) {
+                referencesTree.Delegate.prototype.getHeight = function () {
+                    return rowHeight + 1; // default is 23
+                };
+            }, function(error) {});
+
             // custom views in sidebar
             let replacement = function (original) {
                 let res = original();
@@ -151,6 +158,8 @@ define([
                     override(treeView.TreeView, "createTree", replacement);
                 if (treeView.TreeViewPane)
                     override(treeView.TreeViewPane, "createTree", replacement);
+                if (treeView.CustomTreeView)
+                    override(treeView.CustomTreeView, "createTree", replacement);
             }, function(error) {});
 
             // search
