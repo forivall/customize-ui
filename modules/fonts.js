@@ -279,6 +279,25 @@ define([
             require(["vs/base/browser/ui/splitview/paneview"], function(paneView) {
                 paneView.Pane.HEADER_SIZE = rowHeight;
             }, function(error) {});
+
+            // Problems view
+            require(["vs/workbench/contrib/markers/browser/markersTreeViewer"], function(mtv) {
+                mtv.VirtualDelegate.LINE_HEIGHT = rowHeight;
+            }, function(error) {});
+
+            // TODO: expose an option for this
+            // require(["vs/base/browser/ui/tree/abstractTree"], function(abstractTree) {
+            //     Object.defineProperty(abstractTree.AbstractTree.prototype, 'renderers', {
+            //         configurable: true,
+            //         set: function (value) {
+            //             delete abstractTree.AbstractTree.prototype.renderers;
+            //             if (value[0]) {
+            //                 value[0].constructor.DefaultIndent = 2;
+            //             }
+            //             this.renderers = value;
+            //         }
+            //     });
+            // }, function(error) {});
         }
     }
 
