@@ -11,6 +11,9 @@ define([
     "vs/workbench/contrib/debug/browser/loadedScriptsView",
     "vs/workbench/contrib/debug/browser/breakpointsView",
     "vs/platform/configuration/common/configuration",
+    "vs/platform/registry/common/platform",
+    "vs/platform/theme/common/themeService"
+],
 /**
  * @param {{ [key: string]: any; }} exports
  * @param {typeof import('./utils')} utils
@@ -23,9 +26,12 @@ define([
  * @param {typeof import('../../vscode/src/vs/workbench/contrib/debug/browser/loadedScriptsView')} loadedScriptsView
  * @param {typeof import('../../vscode/src/vs/workbench/contrib/debug/browser/breakpointsView')} breakpointsView
  * @param {typeof import('../../vscode/src/vs/platform/configuration/common/configuration')} configuration
+ * @param {typeof import('../../vscode/src/vs/platform/registry/common/platform')} platform
+ * @param {typeof import('../../vscode/src/vs/platform/theme/common/themeService')} themeService
  */
-], function(exports, utils, explorerView, openEditorsView, searchResultsView,
-    variablesView, callStackView, watchExpressionsView, loadedScriptsView, breakpointsView, configuration) {
+function(exports, utils, explorerView, openEditorsView, searchResultsView,
+    variablesView, callStackView, watchExpressionsView, loadedScriptsView, breakpointsView,
+    configuration, platform, themeService) {
 
     let override = utils.override;
     let addStyle = utils.addStyle;
@@ -33,9 +39,11 @@ define([
     let CustomizeFont = class CustomizeFont {
         /**
          * @param {import('../../vscode/src/vs/platform/configuration/common/configuration').IConfigurationService} configurationService
+         * @param {import('../../vscode/src/vs/platform/theme/common/themeService').IThemeService} themeService
          */
-        constructor(configurationService) {
+        constructor(configurationService, themeService) {
             this.configurationService = configurationService;
+            this.themeService = themeService;
 
             let rowHeight = this.configurationService.getValue("customizeUI.listRowHeight") || 22;
             this.updateRowHeight(rowHeight);
@@ -49,6 +57,9 @@ define([
             let styleSheet = this.configurationService.getValue("customizeUI.stylesheet");
             if (styleSheet instanceof Object) {
                 this.addCustomStyleSheet(styleSheet);
+                if (Object.keys(styleSheet).find((k) => k.includes('.goto-definition-link'))) {
+                    this.unimportantThemingParticipants();
+                }
             }
 
             let fontFamily = this.configurationService.getValue("customizeUI.font.regular");
@@ -246,10 +257,67 @@ define([
                 paneView.Pane.HEADER_SIZE = rowHeight;
             }, function(error) {});
         }
+
+        unimportantThemingParticipants() {
+            /** @type {import('../../vscode/src/vs/platform/registry/common/platform').IRegistry & { data?: Map<string, any> }} */
+            const platformRegistry = platform.Registry
+            /** @type {import('../../vscode/src/vs/platform/theme/common/themeService').IThemingRegistry} */
+            const themingRegistry = platformRegistry.data.get(themeService.Extensions.ThemingContribution)
+            themingRegistry.constructor
+            const participants = themingRegistry.getThemingParticipants();
+            let participantIndex = participants.findIndex((participant) => {
+                return participant.toString().includes('.goto-definition-link')
+            });
+            if (participantIndex === -1) {
+                const dispose = themingRegistry.onThemingParticipantAdded(
+                    /** @param {import('../../vscode/src/vs/platform/theme/common/themeService').IThemingParticipant} participant */
+                    (participant) => {
+                        if (participant.toString().includes('.goto-definition-link')) {
+                            participantIndex = participants.length - 1;
+                            dispose();
+                        }
+                    }
+                )
+            }
+            participants.forEach = (callbackfn, thisarg) =>
+                Array.prototype.forEach.call(participants,
+                    /** 
+                     * @param {import('../../vscode/src/vs/platform/theme/common/themeService').IThemingParticipant} value
+                     * @param {number} i
+                     * @param {typeof participants} arr
+                     */
+                    (value, i, arr) => {
+                        if (i === participantIndex) {
+                            console.log('applying theming!', i, value)
+                            const original = value;
+                            value = function(theme, collector, environment) {
+                                /** @type {import('../../vscode/src/vs/platform/theme/common/themeService').ICssStyleCollector} */
+                                const proxyCollector = {
+                                    addRule(rule) {
+                                        const patchedRule = rule
+                                            .replace(/ ?!important/g, '')
+                                            .replace(
+                                                /\.goto-definition-link\b/g,
+                                                '$&$&$&$&'
+                                            )
+                                        console.log('addRule!', patchedRule)
+                                        collector.addRule(patchedRule)
+                                    }
+                                }
+                                original.call(this, theme, proxyCollector, environment)
+                            }
+                        }
+                        callbackfn.call(thisarg, value, i, arr)
+                    }
+                )
+        }
     }
 
     CustomizeFont = utils.decorate([
         utils.param(0, configuration.IConfigurationService)
+    ], CustomizeFont);
+    CustomizeFont = utils.decorate([
+        utils.param(1, themeService.IThemeService)
     ], CustomizeFont);
 
     exports.run = function(instantiationService) {
