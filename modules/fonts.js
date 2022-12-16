@@ -1,3 +1,4 @@
+/// <reference types="requirejs" />
 define([
     "exports",
     "customize-ui/utils",
@@ -10,6 +11,19 @@ define([
     "vs/workbench/contrib/debug/browser/loadedScriptsView",
     "vs/workbench/contrib/debug/browser/breakpointsView",
     "vs/platform/configuration/common/configuration",
+/**
+ * @param {{ [key: string]: any; }} exports
+ * @param {typeof import('./utils')} utils
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/files/browser/views/explorerViewer')} explorerView
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/files/browser/views/openEditorsView')} openEditorsView
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/search/browser/searchResultsView')} searchResultsView,
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/debug/browser/variablesView')} variablesView
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/debug/browser/callStackView')} callStackView
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/debug/browser/watchExpressionsView')} watchExpressionsView
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/debug/browser/loadedScriptsView')} loadedScriptsView
+ * @param {typeof import('../../vscode/src/vs/workbench/contrib/debug/browser/breakpointsView')} breakpointsView
+ * @param {typeof import('../../vscode/src/vs/platform/configuration/common/configuration')} configuration
+ */
 ], function(exports, utils, explorerView, openEditorsView, searchResultsView,
     variablesView, callStackView, watchExpressionsView, loadedScriptsView, breakpointsView, configuration) {
 
@@ -17,6 +31,9 @@ define([
     let addStyle = utils.addStyle;
 
     let CustomizeFont = class CustomizeFont {
+        /**
+         * @param {import('../../vscode/src/vs/platform/configuration/common/configuration').IConfigurationService} configurationService
+         */
         constructor(configurationService) {
             this.configurationService = configurationService;
 
